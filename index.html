@@ -1,0 +1,2107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chained</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%23def553'/></svg>">
+<style>
+  /* Side text and corner text font: Authentic Sans Condensed 90 */
+  @font-face {
+    font-family: "Authentic Sans Condensed";
+    src: url("fonts/AUTHENTICSans-Condensed-90.otf") format("opentype");
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+  }
+  /* The heavier cut: used for the About page text */
+  @font-face {
+    font-family: "Authentic Sans Condensed 130";
+    src: url("fonts/AUTHENTICSans-Condensed-130.otf") format("opentype");
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+  }
+  /* Big number font: Castillon Thin */
+  @font-face {
+    font-family: "Castillon Thin";
+    src: url("fonts/CastillonTrial-Thin.otf") format("opentype");
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+  }
+  /* Title font (top right): Cancellaresca Script, as a web font (WOFF2) */
+  @font-face {
+    font-family: "Cancellaresca Script";
+    src: url("fonts/Cancellaresca-Script.woff2") format("woff2");
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  :root {
+    --bg: #fcfcfc;     /* background colour */
+    --ink: #1a1a1a;    /* text colour (black) */
+    --slot: #d9d9d9;   /* colour of the circles without an image */
+
+    --font: "Authentic Sans Condensed", "Arial Narrow", sans-serif;
+    --col: 20vw;       /* width of the centre column (the code updates this) */
+    --block-width: 24vw; /* width of both text blocks (the code updates this) */
+    --big-num-size: 20vw; /* the code works this out (see NUM_SPAN in the script) */
+    --line-period: 3px;  /* width of one stripe + its gap in the circles (the code updates this) */
+    --line-ink: 1.5px;   /* width of one stripe in the circles (the code updates this) */
+    --photo-text-nudge: 0px; /* lifts the corner text so the gap is measured to the top of the letters (the code updates this) */
+
+    /* SIDE TEXT SIZE: grows and shrinks with the window
+       (if a window is very narrow, the code makes it a little smaller so it never touches the number) */
+    --text-size: clamp(12px, 1.1vw, 17px);
+
+    /* BLINK (shared by the title, the coordinates, and the About / Watch the film labels)
+       --blink-speed: how long each flash takes, out or back in (0.1s = very rapid, 0.15s = rapid, 0.2s = a little calmer)
+       --blink-dim:   how faint it gets on the "off" beat (0 = disappears completely, 0.2 = faint) */
+    --blink-speed: 0.1s;
+    --blink-dim: 0;
+
+    /* TITLE (top-right corner): "Chained" in plain Cancellaresca Script (hidden for now: SHOW_TITLE in the script)
+       --title-font:        its font (the backup is a plain serif, so it's obvious if the script font fails to load)
+       --title-size:        size of the letters
+       --title-color:       colour of the letters (black)
+       --title-box-bg:      colour behind the letters (transparent = no box; var(--ink) = a black box)
+       --title-box-radius:  corner rounding of the box, if there is one (0 = square corners)
+       --title-nudge-left:  how far the title moves left from the bars' right edge
+                            (0vw = lined up with the bars, 2vw = a little in, 4vw = further in; always include "vw") */
+    --title-font: "Cancellaresca Script", Georgia, serif;
+    --title-size: clamp(44px, 5vw, 88px);
+    --title-color: var(--ink);
+    --title-box-bg: transparent;
+    --title-box-radius: 0;
+    --title-nudge-left: 2vw;
+
+    /* BOTTOM BARS (like Hard Sun), in the bottom-right corner:
+       a black "About" bar and a light grey "Watch the film" bar, each with a + in its right corner
+       that turns into × while its panel is open. Each panel opens only above its own bar. Nothing leaves the page.
+       The words "About" and "Watch the film" blink while hovered.
+       --bar-font:         the bar font (a plain sans like Hard Sun's; var(--font) = your Authentic Sans)
+       --bar-text-size:    size of the bar text
+       --bar-height:       height of the bars
+       --bar-width:        total width of both bars together (62.5vw = 2.5/4 of the window)
+       --bar-right:        distance from the right edge of the window (the title is measured from this too)
+       --bar-bottom:       distance from the bottom of the window
+       --bar-split:        how much of that width the black bar takes (38% = like Hard Sun's proportions)
+       --bar-gap:          space between the two bars, and between the bars and the panels above them
+       --bar-dark:         colour of the black bar
+       --bar-light:        colour of the grey bar
+       --panel-width:      how wide the About page opens (var(--bar-split) = exactly as wide as the black bar)
+       --panel-max-height: the tallest the About page can get before it scrolls (the calc = almost the full window) */
+    --bar-font: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --bar-text-size: clamp(11px, 0.9vw, 14px);
+    --bar-height: clamp(22px, 1.6vw, 30px);
+    --bar-width: 62.5vw;
+    --bar-right: 0.5vw;
+    --bar-bottom: 0.5vw;
+    --bar-split: 38%;
+    --bar-gap: 0.4vw;
+    --bar-dark: var(--ink);
+    --bar-light: #ececec;
+    --panel-width: var(--bar-split);
+    --panel-max-height: calc(100vh - var(--bar-height) - var(--bar-bottom) - var(--bar-gap) - 1vw);
+
+    /* ABOUT PAGE (opens above the black bar): the text inside a rough, hand-printed square frame.
+       --about-ink:          colour of the frame and text (var(--ink) = black; #e10600 = a red spot colour)
+       --about-bg:           the sheet's background (var(--bg) = the page colour)
+       --about-font:         the text font (Authentic Sans Condensed 130 = the heavier cut)
+       --about-text-size:    size of the text
+       --about-leading:      line spacing (1.05 = tight like the reference, 1.2 = more open)
+       --about-para-gap:     space between the two paragraphs (0 = none, 1 = one empty line, 1.5 = more)
+       --about-credits-gap:  space above the credits (1.5 = a little, 2.5 = clearly apart, 4 = far apart)
+       --about-pad:          space between the sheet's edge and the frame (0.6vw = tight, 1.2vw = medium, 2vw = roomy)
+       --about-inner-pad:    space between the frame and the text (1vw = tight, 1.6vw = medium, 2.4vw = roomy)
+       --about-frame-weight: thickness of the frame line (0.2vw = fine, 0.3vw = like the reference, 0.45vw = heavy)
+       (how rough the frame is: the "scale" in the roughEdge filter in the HTML) */
+    --about-ink: var(--ink);
+    --about-bg: var(--bg);
+    --about-font: "Authentic Sans Condensed 130", "Authentic Sans Condensed", "Arial Narrow", sans-serif;
+    --about-text-size: clamp(13px, 1.05vw, 17px);
+    --about-leading: 1.08;
+    --about-para-gap: 1;
+    --about-credits-gap: 2.5;
+    --about-pad: 1.2vw;
+    --about-inner-pad: 1.6vw;
+    --about-frame-weight: 0.3vw;
+
+    /* PHOTO + SPECIMEN LABEL (top-left corner): a photo of an FDC, with a two-line label BELOW it:
+         Fig. 08 ········ 02.09.2026    (SHOW_COUNTER and COUNTER_RIGHT_SHOWS in the script)
+         40.7309° N, 73.9924° W         (sized so it's exactly as wide as the photo: MATCH_PHOTO_WIDTH)
+       The corner's left edge lines up with the left edge of the side text in the middle (CORNER_ALIGN_TO_TEXT in the script).
+       While you're not scrolling, the corner plays through all the photos as a slideshow (see SLIDESHOW in the script);
+       while you scroll, it shows the photo of the circle in the middle.
+       Normally the photo is black and white and the text is grey, like the big number;
+       hovering over the photo or its text shows the photo in colour and the text in black (and pauses the slideshow).
+       The coordinates link to the spot in Google Maps, and blink (black / invisible) while hovered.
+       --photo-width:              how wide the photo is, and so also how wide the label is
+                                   (7vw = compact, 8.5vw = medium, 10vw = large)
+       --photo-gap:                space between the bottom of the photo and the top of the label
+                                   (0.5vw = tight, 0.8vw = a little space, 1.5vw = clearly apart)
+       --photo-font:               the font of the label (Authentic Sans Condensed 90, like the side text)
+       --photo-text-size:          the starting size the code measures from (only used as-is when MATCH_PHOTO_WIDTH is false)
+       --photo-text-idle:          text colour when NOT hovered (var(--big-num-color) = the same grey as the big number)
+       --photo-text-idle-opacity:  text strength when NOT hovered (var(--big-num-opacity) = the same as the big number)
+       --photo-text-active:        text colour when hovered (black)
+       --photo-text-spread:        flex-start = the lines stack from the top
+       --photo-line-gap:           gap between the label's lines
+                                   (0.35em = tight, 0.8em = a little space, 1.2em = clearly apart)
+       --photo-contrast:           how strong the black and white is (1 = original, 0.85 = slightly soft, 0.7 = faded)
+       --photo-brightness:         how light it is (1 = original, 1.05 = slightly lighter)
+       --photo-fade:               how long the switch to colour / black takes (0.2s = snappy, 0.4s = smooth, 0.8s = slow)
+       --photo-top:                distance from the top of the window
+       --photo-left:               distance from the left edge of the window
+                                   (only used when CORNER_ALIGN_TO_TEXT is false; otherwise the code sets it) */
+    --photo-width: 8.5vw;
+    --photo-gap: 0.8vw;
+    --photo-font: "Authentic Sans Condensed", "Arial Narrow", sans-serif;
+    --photo-text-size: clamp(12px, 1.1vw, 17px);
+    --photo-text-idle: var(--big-num-color);
+    --photo-text-idle-opacity: var(--big-num-opacity);
+    --photo-text-active: var(--ink);
+    --photo-text-spread: flex-start;
+    --photo-line-gap: 0.8em;
+    --photo-contrast: 0.7;
+    --photo-brightness: 1.1;
+    --photo-fade: 0.4s;
+    --photo-top: 2vw;
+    --photo-left: 2vw;
+
+    /* BIG NUMBER (two fixed slots centred on the middle circle)
+       It only shows while the circles are moving, and fades away once they settle (see NUMBER_HIDE_DELAY in the script).
+       Its colour and strength are also used by the grey corner text.
+       --big-num-color:    its colour (grey)
+       --big-num-opacity:  how strong it is while showing (1 = full, 0.6 = soft, 0.35 = very faint)
+       --big-num-layer:    2 = printed on top of the circles, 0 = behind the circles
+       --big-num-blend:    (when on top) multiply = printed over the image, the image shows through the digits
+                                         normal   = a solid grey shape that covers the image where they overlap
+       --big-num-thin:     (solid style only) shaves the strokes thinner (0 = off, 0.06vw = slightly, 0.12vw = a lot)
+       --big-num-offset:   extra nudge up or down, on top of the automatic centring (e.g. -1vw = up)
+       --big-num-fade-in:  how quickly it appears when scrolling starts (0.1s = instantly, 0.2s = quick, 0.5s = gentle)
+       --big-num-fade-out: how slowly it fades away once the circles settle (0.3s = quick, 0.6s = smooth, 1.2s = slow) */
+    --big-num-font: "Castillon Thin", Georgia, serif;
+    --big-num-color: #9e9e9e;
+    --big-num-opacity: 0.85;
+    --big-num-layer: 2;
+    --big-num-blend: multiply;
+    --big-num-thin: 0vw;
+    --big-num-offset: 0vw;
+    --big-num-fade-in: 0.2s;
+    --big-num-fade-out: 0.6s;
+
+    /* IMAGE IN THE CIRCLES (faded, like a printed photo)
+       --img-contrast:   lower = softer, greyer blacks (1 = original, 0.65 = faded print)
+       --img-brightness: higher = lighter overall (1 = original) */
+    --img-contrast: 0.65;
+    --img-brightness: 1.15;
+
+    /* SOFT EDGE: the stripes fade out over the outer part of every circle, so there's no hard cut line
+       (0% = crisp edge, 6% = soft, 8% = gentle, 12% = very soft, 20% = dissolves into the page) */
+    --circle-feather: 8%;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body {
+    height: 100%;
+    overflow: hidden;            /* no normal scrolling: the code handles it */
+    overscroll-behavior: none;
+  }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* the blink used by the title, the coordinates and the About / Watch the film labels */
+  @keyframes blink {
+    from { opacity: 1; }
+    to   { opacity: var(--blink-dim); }
+  }
+
+  /* ---------- TITLE (top-right) ---------- */
+  .title {
+    position: fixed;
+    top: 0;
+    right: calc(var(--bar-right) + var(--title-nudge-left));
+    margin: 0;
+    font-family: var(--title-font);
+    font-size: var(--title-size);
+    font-weight: normal;
+    line-height: 1;
+    color: var(--title-color);
+    background: var(--title-box-bg);
+    border-radius: var(--title-box-radius);
+    overflow: visible;
+    pointer-events: auto;        /* so it can be hovered */
+    cursor: default;
+    z-index: 6;                  /* above the screen grain (5), like the corner photo */
+  }
+  .title.is-hidden {
+    display: none;               /* SHOW_TITLE = false in the script */
+  }
+  .title:hover {
+    animation: blink var(--blink-speed) ease-in-out infinite alternate;
+  }
+  .title-text {
+    position: absolute;          /* placed inside the frame by the code, by its real baseline */
+    left: 0;
+    top: 0;
+    white-space: nowrap;
+  }
+  .baseline-probe {
+    display: inline-block;       /* an empty, zero-size marker that sits exactly on the text's baseline */
+    width: 0;
+    height: 0;
+    vertical-align: baseline;
+  }
+
+  /* ---------- BOTTOM BARS (like Hard Sun), bottom-right corner ---------- */
+  .bars {
+    position: fixed;
+    right: var(--bar-right);
+    bottom: var(--bar-bottom);
+    width: var(--bar-width);
+    display: flex;
+    gap: var(--bar-gap);
+    z-index: 7;                  /* above everything, so the panels sit on top */
+    font-family: var(--bar-font);
+    font-size: var(--bar-text-size);
+    line-height: 1;
+  }
+  .bars button {
+    font: inherit;
+    border: 0;
+    margin: 0;
+    cursor: pointer;
+  }
+  .bars button:focus-visible {
+    outline: 1px solid var(--ink);
+    outline-offset: 2px;
+  }
+  .bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5em;
+    height: var(--bar-height);
+    padding: 0 0.75em;
+    white-space: nowrap;
+    text-align: left;
+  }
+  .bar--dark {
+    flex: 0 0 var(--bar-split);
+    background: var(--bar-dark);
+    color: var(--bg);
+  }
+  .bar--light {
+    flex: 1 1 auto;
+    background: var(--bar-light);
+    color: var(--ink);
+  }
+  .bar:hover .bar-label,
+  .bar:focus-visible .bar-label {
+    animation: blink var(--blink-speed) ease-in-out infinite alternate;
+  }
+  /* the + in each bar's right corner: turns into × while its panel is open */
+  .bar .plus {
+    display: block;
+    font-size: 1.3em;
+    line-height: 1;
+    transition: transform 0.3s ease;
+  }
+  .bar.is-open .plus {
+    transform: rotate(45deg);
+  }
+
+  /* the panels that open above the bars (each only above its own bar) */
+  .panel {
+    position: absolute;
+    bottom: calc(100% + var(--bar-gap));
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(0.6em);
+    pointer-events: none;
+    transition: opacity 0.3s ease, transform 0.3s ease, visibility 0s linear 0.3s;
+  }
+  .panel.is-open {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    pointer-events: auto;
+    transition: opacity 0.3s ease, transform 0.3s ease, visibility 0s;
+  }
+
+  /* ---------- ABOUT PAGE: text inside a rough square frame ---------- */
+  .panel--about {
+    left: 0;
+    width: var(--panel-width);
+    max-height: var(--panel-max-height);
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: var(--about-bg);
+    color: var(--about-ink);
+    scrollbar-width: none;       /* scrolls without a visible scrollbar */
+  }
+  .panel--about::-webkit-scrollbar { display: none; }
+  .about-sheet {
+    position: relative;
+    padding: var(--about-pad);
+    font-family: var(--about-font);
+    text-transform: uppercase;
+  }
+  .about-body {
+    position: relative;
+    padding: var(--about-inner-pad);
+  }
+  .about-frame {
+    position: absolute;
+    inset: 0;
+    border: var(--about-frame-weight) solid var(--about-ink);
+    filter: url(#roughEdge);      /* makes the line wobble like a print */
+    pointer-events: none;
+  }
+  .about-letter {
+    position: relative;
+    font-size: var(--about-text-size);
+    line-height: var(--about-leading);
+    letter-spacing: 0.01em;
+  }
+  .about-letter p {
+    margin: 0;
+  }
+  /* space between the two paragraphs (see --about-para-gap) */
+  .about-letter p + p {
+    margin-top: calc(var(--about-leading) * var(--about-para-gap) * 1em);
+  }
+  /* the credits: their own block, further down (see --about-credits-gap) */
+  .about-letter .about-credits {
+    margin-top: calc(var(--about-leading) * var(--about-credits-gap) * 1em);
+  }
+
+  /* ---------- FILM PANEL ---------- */
+  .panel--film {
+    left: calc(var(--bar-split) + var(--bar-gap));   /* starts exactly where the grey bar starts */
+    right: 0;                                         /* and ends where it ends, so it never covers About */
+    background: var(--ink);
+  }
+  .panel--film video {
+    display: block;
+    width: 100%;
+    max-height: 60vh;
+    background: var(--ink);
+  }
+  .panel--film .film-missing {
+    display: none;
+    padding: 2em 0.75em;
+    color: var(--bg);
+  }
+  .panel--film.no-film video { display: none; }
+  .panel--film.no-film .film-missing { display: block; }
+
+  /* The circles AND the big number share this one layer,
+     so the number can be printed over the circles (or sit behind them). */
+  .stage {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    z-index: 1;
+  }
+
+  /* Big number: two fixed slots, centred on the middle circle. */
+  .bignum {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: var(--big-num-layer);
+    opacity: 0;                  /* hidden while the circles are still; the code shows it while scrolling */
+    transition: opacity var(--big-num-fade-out) ease;
+    mix-blend-mode: var(--big-num-blend);
+  }
+  .bignum.is-scrolling {
+    opacity: var(--big-num-opacity);
+    transition-duration: var(--big-num-fade-in);
+  }
+  .bignum.is-hidden {
+    display: none;               /* SHOW_NUMBER = false in the script */
+  }
+  .bignum .num {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+  }
+  .bignum .num.is-active {
+    opacity: 1;
+  }
+  .bignum .digit {
+    position: absolute;
+    font-family: var(--big-num-font);
+    font-size: var(--big-num-size);
+    line-height: 1;
+    white-space: nowrap;
+    color: var(--big-num-color);
+    font-variant-numeric: lining-nums;
+    -webkit-text-stroke: var(--big-num-thin) var(--bg);
+  }
+  /* NUMBER_STYLE = "lines" (off for now) */
+  .bignum.is-lines .digit {
+    color: transparent;
+    -webkit-text-stroke: 0;
+    background-image: repeating-linear-gradient(to right,
+      var(--big-num-color) 0 var(--line-ink),
+      transparent var(--line-ink) var(--line-period));
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+
+  /* ---------- PHOTO + SPECIMEN LABEL (top-left) ---------- */
+  .photo {
+    position: fixed;
+    top: var(--photo-top);
+    left: var(--photo-left);
+    display: flex;
+    flex-direction: column;      /* the label sits BELOW the photo */
+    align-items: flex-start;     /* photo and label both start from the same left edge */
+    gap: var(--photo-gap);
+    z-index: 4;                  /* above the screen grain (5) */
+    cursor: default;
+  }
+  .photo-imgs {
+    position: relative;
+    display: grid;               /* stacks all photos in the same spot */
+    align-self: flex-start;
+    width: var(--photo-width);
+  }
+  .photo-imgs .pic {
+    grid-area: 1 / 1;
+    display: grid;               /* stacks the black-and-white and colour versions */
+    opacity: 0;
+    transition: opacity 0.5s ease;
+  }
+  .photo-imgs .pic img {
+    grid-area: 1 / 1;
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .photo-imgs .pic .bw {
+    position: relative;
+    z-index: 0;
+  }
+  .photo-imgs .pic .bw.is-grey {
+    filter: grayscale(1) contrast(var(--photo-contrast)) brightness(var(--photo-brightness));
+  }
+  .photo-imgs .pic .colour {
+    position: relative;
+    z-index: 1;                  /* always above the black-and-white version */
+    opacity: 0;
+    transition: opacity var(--photo-fade) ease;
+  }
+  .photo.is-hover .photo-imgs .pic .colour {
+    opacity: 1;                  /* the mouse is over the photo or its text: show the original colour */
+  }
+  /* optional extra grain, just over the photo (off by default: PHOTO_GRAIN_STRENGTH = 0) */
+  .photo-grain {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    mix-blend-mode: multiply;
+    z-index: 2;
+  }
+  .photo-info {
+    display: grid;               /* stacks all labels in the same spot */
+    font-family: var(--photo-font);
+    font-size: var(--photo-text-size);
+    line-height: 1;
+    color: var(--photo-text-idle);                 /* grey, like the big number, when not hovered */
+    transform: translateY(var(--photo-text-nudge));   /* lifts the text so --photo-gap is measured to the top of the letters */
+    opacity: var(--photo-text-idle-opacity);
+    transition: color var(--photo-fade) ease, opacity var(--photo-fade) ease;
+    white-space: nowrap;
+  }
+  .photo.is-hover .photo-info {
+    color: var(--photo-text-active);               /* black while hovered */
+    opacity: 1;
+  }
+  .photo-info .info {
+    grid-area: 1 / 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: var(--photo-text-spread);
+    gap: var(--photo-line-gap);
+    align-items: flex-start;
+    height: 100%;
+    opacity: 0;
+    pointer-events: none;        /* hidden labels can't be clicked */
+    transition: opacity 0.5s ease;
+  }
+  .photo-info .info span {
+    display: block;
+  }
+  .photo-imgs .pic.is-active,
+  .photo-info .info.is-active {
+    opacity: 1;
+  }
+  .photo-info .info.is-active {
+    pointer-events: auto;        /* only the visible label can be clicked */
+  }
+  /* the coordinates: a link to Google Maps that blinks (black / invisible) while hovered (no underline) */
+  .photo-info a {
+    color: inherit;
+    text-decoration: none;
+    cursor: pointer;
+    outline: none;
+  }
+  .photo-info a:hover,
+  .photo-info a:focus-visible {
+    animation: blink var(--blink-speed) ease-in-out infinite alternate;
+  }
+
+  /* SPECIMEN LABEL: "Fig. 08" on the left, the field date on the right, spread across the photo's width */
+  .photo-info .counter {
+    display: flex;
+    justify-content: space-between;
+    width: var(--photo-width);
+  }
+
+  /* Side zones: the empty space on each side of the centre column. */
+  .zone {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    width: calc(50vw - var(--col) / 2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 3;
+  }
+  .zone--left  { left: 0; }
+  .zone--right { right: 0; }
+
+  /* Both text blocks are the same width AND the same height (the code sets both) */
+  .side {
+    margin: 0;
+    width: var(--block-width);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    font-family: var(--font);
+    font-size: var(--text-size);
+    line-height: 1.3;
+    text-transform: uppercase;
+    color: var(--ink);
+    hyphens: none;
+  }
+  .side span {
+    display: block;
+    white-space: nowrap;
+    text-align: justify;
+    text-align-last: justify;
+  }
+
+  /* The circles (inside the stage, under the number when --big-num-layer is 2) */
+  .item {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    margin: 0;
+    border-radius: 50%;
+    overflow: hidden;
+    cursor: pointer;
+    z-index: 1;
+    will-change: transform, width, height, filter, opacity;
+  }
+  .item:focus-visible {
+    outline: 1px solid var(--ink);
+    outline-offset: 4px;
+  }
+  /* The image (or grey placeholder) is cropped into a circle, with a soft edge (see --circle-feather) */
+  .item img, .item .ph {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    -webkit-mask-image: radial-gradient(closest-side, #000 calc(100% - var(--circle-feather)), transparent 100%);
+    mask-image: radial-gradient(closest-side, #000 calc(100% - var(--circle-feather)), transparent 100%);
+    transition: opacity 0.6s ease;
+  }
+  .ph {
+    background: var(--slot);
+  }
+
+  /* Film grain: one full-screen canvas over everything except the corner photo and the bottom bars. */
+  .grain {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 5;
+    mix-blend-mode: multiply;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bignum .num, .photo-imgs .pic, .photo-imgs .pic .colour, .photo-info, .photo-info .info,
+    .panel, .panel.is-open, .bar .plus, .item img { transition: none; }
+    .title:hover,
+    .photo-info a:hover,
+    .photo-info a:focus-visible,
+    .bar:hover .bar-label,
+    .bar:focus-visible .bar-label { animation: none; opacity: 0.5; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- Title, top right: "Chained" in plain Cancellaresca Script (hidden for now: SHOW_TITLE in the script) -->
+  <h1 class="title" id="title"><span class="title-text" id="titleText">Chained<span class="baseline-probe" id="titleBaseline" aria-hidden="true"></span></span></h1>
+
+  <!-- Photo of an FDC, with its specimen label below it (filled in by the code) -->
+  <div class="photo" id="photo">
+    <div class="photo-imgs" id="photoImgs">
+      <canvas class="photo-grain" id="photoGrain" aria-hidden="true"></canvas>
+    </div>
+    <div class="photo-info" id="photoInfo"></div>
+  </div>
+
+  <!-- LEFT: what Chained is about. Write it as one paragraph; the code splits it into even lines. -->
+  <div class="zone zone--left">
+    <p class="side side--about" id="about">Chained brings together the experiences of international students in the U.S. and the different futures they imagine after graduation.</p>
+  </div>
+
+  <!-- RIGHT: the question and the instruction. Each <span> is one line. -->
+  <div class="zone zone--right">
+    <p class="side side--prompt" id="prompt">
+      <span>What does it mean when freedom is conditional?</span>
+      <span>Pick a number. There is more than one answer.</span>
+    </p>
+  </div>
+
+  <!-- The circles and the big number share one layer (both filled in by the code) -->
+  <div class="stage" id="stage">
+    <div class="bignum" id="bignum" aria-hidden="true"></div>
+  </div>
+
+  <!-- BOTTOM BARS (like Hard Sun), bottom-right corner. Nothing here leaves the page. -->
+  <div class="bars">
+
+    <!-- ABOUT PAGE (opens above the black bar): the text inside a rough square frame -->
+    <div class="panel panel--about" id="aboutPanel" role="region" aria-label="About Chained">
+      <div class="about-sheet">
+        <div class="about-body">
+          <div class="about-frame" aria-hidden="true"></div>
+          <div class="about-letter">
+            <p>This archive extends the exploration begun in Chained, a publication that used Siamese Connections
+            as metaphors for conditional access. Their chains connect different parts while limiting how far they
+            can move, reflecting the conditions that currently shape the experiences of international students in
+            the United States. The ability to stay, work, and plan for the future is not always a matter of personal
+            choice, raising questions about freedom and the uncertainty of building a life somewhere without knowing
+            how long one can remain.</p>
+            <p>By presenting selected responses as fragments rather than complete interviews, the archive brings
+            together different personal experiences that share an underlying uncertainty. Together, the publication
+            and archive examine the relationship between attachment and restriction, and how a place can leave a
+            lasting impression regardless of how long one is able to stay.</p>
+            <p class="about-credits">
+              Photographs taken in Manhattan, New York City.<br>
+              Photography by Naomi Sumampow.<br>
+              Designed by Naomi Sumampow.<br>
+              Produced as part of Core 3: Design Studio, Project 2, at Parsons School of Design.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- the rough edge for the About frame (scale = how rough: 2 = slight, 4 = like a print, 7 = very ragged) -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+      <filter id="roughEdge">
+        <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" seed="4" result="noise"/>
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="4" xChannelSelector="R" yChannelSelector="G"/>
+      </filter>
+    </svg>
+
+    <!-- FILM PANEL (opens above the grey bar only): put your film at film/chained.mp4, or change the src below -->
+    <div class="panel panel--film" id="filmPanel" role="region" aria-label="Chained, the film">
+      <video id="film" src="film/chained.mp4" controls playsinline preload="metadata"></video>
+      <div class="film-missing">The film is coming soon.</div>
+    </div>
+
+    <!-- BLACK BAR: About on the left (blinks on hover), + on the right (turns into × when open) -->
+    <button class="bar bar--dark" id="aboutBar" aria-expanded="false" aria-controls="aboutPanel">
+      <span class="bar-label">About</span>
+      <span class="plus" aria-hidden="true">+</span>
+    </button>
+
+    <!-- GREY BAR: Watch the film on the left (blinks on hover), + on the right (turns into × when open) -->
+    <button class="bar bar--light" id="filmBar" aria-expanded="false" aria-controls="filmPanel">
+      <span class="bar-label">Watch the film</span>
+      <span class="plus" aria-hidden="true">+</span>
+    </button>
+  </div>
+
+  <canvas class="grain" id="grain" aria-hidden="true"></canvas>
+
+<script>
+  /*
+    TITLE ON / OFF
+    SHOW_TITLE = false: the "Chained" title in the top-right corner is hidden (for now).
+                 true:  it's shown again, exactly as before.
+  */
+  const SHOW_TITLE = false;
+
+  /*
+    CORNER SLIDESHOW
+    SLIDESHOW             = true: on. false: the corner always shows the circle in the middle.
+    SLIDESHOW_SPEED       = how long each photo stays, in ms (800 = quick, 1500 = calm, 3000 = slow)
+    SLIDESHOW_DELAY       = after you scroll: how long the corner stays on the chosen circle before playing again, in ms
+                            (5000 = 5 seconds, 10000 = 10 seconds, 20000 = 20 seconds)
+    SLIDESHOW_FIRST_DELAY = when the page first opens: how long before it starts playing, in ms (2000 = 2 seconds)
+  */
+  const SLIDESHOW = true;
+  const SLIDESHOW_SPEED = 1500;
+  const SLIDESHOW_DELAY = 10000;
+  const SLIDESHOW_FIRST_DELAY = 2000;
+
+  /*
+    BIG NUMBER ON / OFF
+    SHOW_NUMBER = true:  the big number in the centre is used (shown while scrolling, see NUMBER_HIDE_DELAY).
+                  false: it's never shown (the side text stays exactly where it is).
+  */
+  const SHOW_NUMBER = true;
+
+  /*
+    BIG NUMBER STYLE
+    NUMBER_STYLE      = "solid": the digits are a plain grey shape
+                        "lines": the digits are drawn as vertical stripes, like the circles
+    NUMBER_LINE_SHIFT = (lines only) 0 = on the circle's stripes, 0.5 = in the gaps between them
+  */
+  const NUMBER_STYLE = "solid";
+  const NUMBER_LINE_SHIFT = 0;
+
+  /*
+    NUMBER ONLY WHILE SCROLLING
+    NUMBER_HIDE_DELAY = how long it stays after the circles stop, in ms (0 = fades straight away, 400 = a short pause, 1200 = lingers)
+  */
+  const NUMBER_HIDE_DELAY = 400;
+
+  /*
+    TITLE OPTICAL TRIM
+    TITLE_TRIM_RIGHT trims the space after the "d", as a share of the title's size
+    (0 = mathematically even, 0.06 = balanced by eye, 0.1 = tighter)
+  */
+  const TITLE_TRIM_RIGHT = 0.06;
+
+  /*
+    BIG NUMBER SIZE AND SPACING
+    NUM_SPAN          = how wide the whole number is compared to the middle circle
+                        (0.7 = sits inside the circle, 1 = about the circle's width, 1.35 = 35% wider, 1.6 = much bigger)
+    DIGIT_GAP         = space between the two slots (0 = slots touching, 0.04 = tight, 0.1 = more open)
+    RIGHT_DIGIT_SHIFT = moves ONLY the right digit further to the right (0 = no shift, 0.06 = a little, 0.12 = clearly)
+  */
+  const NUM_SPAN = 1.35;
+  const DIGIT_GAP = 0.04;
+  const RIGHT_DIGIT_SHIFT = 0.06;
+
+  /*
+    HOW THE CIRCLES SIT OVER THE NUMBER (only matters when the number is BEHIND, --big-num-layer: 0)
+    IMAGE_BLEND / EMPTY_BLEND = "normal" (solid) or "multiply" (see-through)
+  */
+  const IMAGE_BLEND = "normal";
+  const EMPTY_BLEND = "multiply";
+
+  /*
+    TEXT BELOW THE CORNER PHOTO (the specimen label)
+      Fig. 08 ········ 02.09.2026    (SHOW_COUNTER)
+      40.7309° N, 73.9924° W         (the coordinates, linking to Google Maps)
+    FIG_PREFIX        = (only if SHOW_FIG is true) an extra "#Fig. 01" line, as before
+    SHOW_TIME         = false: the time isn't shown. true: the time appears on its own line (e.g. 03:10:09 PM)
+    SHOW_FIG          = false: no extra #Fig. line (the label row already shows the number)
+    MATCH_PHOTO_WIDTH = true:  the coordinates are sized so they're exactly as wide as the photo (edge to edge),
+                               and the label row uses that same size
+                        false: they use --photo-text-size instead
+  */
+  const FIG_PREFIX = "#Fig. ";
+  const SHOW_TIME = false;
+  const SHOW_FIG = false;
+  const MATCH_PHOTO_WIDTH = true;
+
+  /*
+    SPECIMEN LABEL ROW (top-left, between the photo and the coordinates)
+    SHOW_COUNTER        = true: a row reading "Fig. 08 ··· 02.09.2026" across the photo's width. false: just the coordinates.
+    COUNTER_LEFT        = what comes before the circle's number ("Fig. " = Fig. 08, "No. " = No. 08, "" = 08)
+    COUNTER_RIGHT_SHOWS = "date":  the date the photo was taken (from each circle's date: line)
+                          "total": "of 09"
+    COUNTER_RIGHT       = (total only) what comes before the total ("of " = of 09, "/ " = / 09)
+    DATE_STYLE          = "full":    28.08.2026
+                          "short":   28.08.26
+                          "written": Aug 28 2026 (exactly as typed in the list; avoids day/month mix-ups)
+    DATE_MISSING        = what shows while a circle has no date yet ("—", "", "Undated")
+  */
+  const SHOW_COUNTER = true;
+  const COUNTER_LEFT = "Fig. ";
+  const COUNTER_RIGHT_SHOWS = "date";
+  const COUNTER_RIGHT = "of ";
+  const DATE_STYLE = "full";
+  const DATE_MISSING = "—";
+
+  /*
+    CORNER POSITION
+    CORNER_ALIGN_TO_TEXT = true:  the photo's left edge lines up with the left edge of the side text in the middle
+                           false: the photo sits at --photo-left from the window's edge
+  */
+  const CORNER_ALIGN_TO_TEXT = true;
+
+  /*
+    GRAIN ON THE CORNER PHOTO
+    PHOTO_GRAIN_STRENGTH = add a grain of its own over the photo (0 = none, 35 = subtle, 55 = clearly grainy, 80 = heavy)
+  */
+  const PHOTO_GRAIN_STRENGTH = 0;
+
+  /*
+    FITTING THE COVERS INTO THE CIRCLES
+    AUTO_CROP      = true: the code finds the FDC cover in each circle image and crops tightly around it.
+    CROP_PADDING   = extra space around the cover (0 = touches the edge, 0.05 = tiny margin, -0.05 = zoom in slightly)
+    CROP_THRESHOLD = how dark something must be to count as part of the cover (0 = black, 255 = white)
+  */
+  const AUTO_CROP = true;
+  const CROP_PADDING = 0;
+  const CROP_THRESHOLD = 140;
+
+  /*
+    LINE SCREEN (the striped print effect on the circle covers)
+    LINE_SCREEN         = true: on for the circle covers. false: show them as they are.
+    PHOTO_LINE_SCREEN   = false: the corner photo is a plain black-and-white photo. true: it gets the lines too.
+    LINES_ACROSS        = how many lines run across a CIRCLE (60 = chunky, 90 = close to the reference, 130 = very fine)
+    PHOTO_LINES_ACROSS  = (if PHOTO_LINE_SCREEN is true) how many lines run across the corner photo
+    LINE_FILL           = how thick each line is compared with the gap (0.3 = thin, 0.5 = half and half, 0.7 = thick)
+    LINE_STYLE          = "solid" (even lines) or "halftone" (thicker in darker areas)
+    LINE_THRESHOLD      = (for "solid") how dark something must be to get lines (0 = black, 255 = white)
+                          (raise it, e.g. 170, if a pale cover looks too faint; lower it, e.g. 130, for fewer lines)
+    LINE_COLOR          = the colour of the lines
+    PAPER_SHOWS_THROUGH = true:  the spaces between the lines are see-through, so the stripes print straight onto
+                                 the page (its colour and grain), with no disc behind them
+                          false: the spaces are white, so each circle has its own paper
+  */
+  const LINE_SCREEN = true;
+  const PHOTO_LINE_SCREEN = false;
+  const LINES_ACROSS = 90;
+  const PHOTO_LINES_ACROSS = 45;
+  const LINE_FILL = 0.5;
+  const LINE_STYLE = "solid";
+  const LINE_THRESHOLD = 150;
+  const LINE_COLOR = "#1a1a1a";
+  const PAPER_SHOWS_THROUGH = true;
+
+  /*
+    TEXT BLOCK SETTINGS
+    LEFT_LINES  = how many lines the left paragraph is split into (null = automatic, or e.g. 3 or 4)
+    RIGHT_ALIGN = "top", "bottom" or "centre": which of the left block's lines the right block lines up with
+    TEXT_MARGIN = the smallest space kept around the side text, in vw
+  */
+  const LEFT_LINES = null;
+  const RIGHT_ALIGN = "top";
+  const TEXT_MARGIN = 2;
+
+  const root = document.documentElement;
+
+  // ---------- SIDE TEXT ----------
+  const aboutEl = document.getElementById("about");
+  const promptEl = document.getElementById("prompt");
+  const ABOUT_TEXT = aboutEl.textContent.trim().replace(/\s+/g, " ");
+  const measureCtx = document.createElement("canvas").getContext("2d");
+
+  // apply RIGHT_ALIGN
+  promptEl.style.justifyContent =
+    RIGHT_ALIGN === "bottom" ? "flex-end" :
+    RIGHT_ALIGN === "centre" ? "center" : "flex-start";
+
+  // Splits the words into k lines so the longest line is as short as possible
+  function evenLines(words, widths, space, k) {
+    const n = words.length;
+    const lineW = (a, b) => {           // width of words a..b-1 on one line
+      let w = 0;
+      for (let i = a; i < b; i++) w += widths[i];
+      return w + space * (b - a - 1);
+    };
+    const best = Array.from({ length: n + 1 }, () => Array(k + 1).fill(Infinity));
+    const cut = Array.from({ length: n + 1 }, () => Array(k + 1).fill(0));
+    best[0][0] = 0;
+    for (let i = 1; i <= n; i++) {
+      for (let j = 1; j <= Math.min(i, k); j++) {
+        for (let p = j - 1; p < i; p++) {
+          const v = Math.max(best[p][j - 1], lineW(p, i));
+          if (v < best[i][j]) { best[i][j] = v; cut[i][j] = p; }
+        }
+      }
+    }
+    const lines = [];
+    let i = n;
+    for (let j = k; j >= 1; j--) {
+      const p = cut[i][j];
+      lines.unshift(words.slice(p, i).join(" "));
+      i = p;
+    }
+    return lines;
+  }
+
+  // Lays out both text blocks at the current text size; returns their shared width
+  function layoutText() {
+    promptEl.style.width = "max-content";
+    const rightW = promptEl.getBoundingClientRect().width;
+    promptEl.style.width = "";
+
+    const cs = getComputedStyle(aboutEl);
+    measureCtx.font = cs.fontWeight + " " + cs.fontSize + " " + cs.fontFamily;
+    const words = ABOUT_TEXT.split(" ");
+    const widths = words.map(w => measureCtx.measureText(w.toUpperCase()).width);
+    const space = measureCtx.measureText(" ").width;
+    const total = widths.reduce((a, b) => a + b, 0) + space * (words.length - 1);
+
+    let k = LEFT_LINES || Math.max(1, Math.round(total / rightW));
+    k = Math.min(k, words.length);
+    const lines = evenLines(words, widths, space, k);
+
+    aboutEl.textContent = "";
+    lines.forEach(text => {
+      const s = document.createElement("span");
+      s.textContent = text;
+      aboutEl.appendChild(s);
+    });
+
+    aboutEl.style.width = "max-content";
+    const leftW = aboutEl.getBoundingClientRect().width;
+    aboutEl.style.width = "";
+    const blockW = Math.ceil(Math.max(leftW, rightW)) + 1;
+    root.style.setProperty("--block-width", blockW + "px");
+    return blockW;
+  }
+
+  function fitTextBlocks() {
+    root.style.removeProperty("--text-size");
+    aboutEl.style.height = "";
+    promptEl.style.height = "";
+
+    let blockW = layoutText();
+
+    // if the window is so narrow that the text wouldn't fit beside the number, make the text a little smaller
+    const vw = window.innerWidth / 100;
+    const room = (window.innerWidth - colPx) / 2 - 2 * TEXT_MARGIN * vw;
+    if (blockW > room && room > 0) {
+      const current = parseFloat(getComputedStyle(aboutEl).fontSize);
+      root.style.setProperty("--text-size", (current * room / blockW) + "px");
+      blockW = layoutText();
+    }
+
+    // both blocks get the same height, so their lines sit on one shared grid
+    const blockH = Math.max(aboutEl.getBoundingClientRect().height, promptEl.getBoundingClientRect().height);
+    aboutEl.style.height = blockH + "px";
+    promptEl.style.height = blockH + "px";
+
+    // the corner photo lines up with the left edge of the left text block (see CORNER_ALIGN_TO_TEXT)
+    if (CORNER_ALIGN_TO_TEXT) {
+      root.style.setProperty("--photo-left", aboutEl.getBoundingClientRect().left + "px");
+    }
+  }
+
+  // ---------- BOTTOM BARS: About page and film panel ----------
+  const aboutBar = document.getElementById("aboutBar");
+  const aboutPanel = document.getElementById("aboutPanel");
+  const filmBar = document.getElementById("filmBar");
+  const filmPanel = document.getElementById("filmPanel");
+  const film = document.getElementById("film");
+
+  // opens or closes the About page (+ turns into × while it's open)
+  function setAbout(open) {
+    aboutPanel.classList.toggle("is-open", open);
+    aboutBar.classList.toggle("is-open", open);
+    aboutBar.setAttribute("aria-expanded", open);
+  }
+  aboutBar.addEventListener("click", () => setAbout(!aboutPanel.classList.contains("is-open")));
+
+  // opens the film and plays it, or pauses it and folds it away (+ turns into × while it's open)
+  function setFilm(open) {
+    filmPanel.classList.toggle("is-open", open);
+    filmBar.classList.toggle("is-open", open);
+    filmBar.setAttribute("aria-expanded", open);
+    if (open) {
+      const p = film.play();
+      if (p && p.catch) p.catch(() => {});   // if the film is missing or autoplay is blocked, the panel still opens
+    } else {
+      film.pause();
+    }
+  }
+  filmBar.addEventListener("click", () => setFilm(!filmPanel.classList.contains("is-open")));
+
+  // if the film file isn't there yet, show "The film is coming soon." instead of an empty player
+  film.addEventListener("error", () => filmPanel.classList.add("no-film"));
+
+  // Esc closes both panels
+  window.addEventListener("keydown", e => {
+    if (e.key === "Escape") {
+      setAbout(false);
+      setFilm(false);
+    }
+  });
+
+  // true when the mouse / finger / keyboard focus is inside the bars or their panels
+  // (so scrolling the About text doesn't also scroll the circles)
+  const inBars = el => !!(el && el.closest && el.closest(".bars"));
+
+  /*
+    GRAIN SETTINGS
+    GRAIN_STRENGTH = how dark the specks can get (0 = no grain, 18 = subtle, 35 = soft, 60 = strong)
+    GRAIN_FPS      = how many times a second the grain changes (8 = calm, 12 = film-like, 24 = busy)
+    GRAIN_FRAMES   = how many different grain frames it cycles through (1 = still)
+  */
+  const GRAIN_STRENGTH = 18;
+  const GRAIN_FPS = 12;
+  const GRAIN_FRAMES = 4;
+
+  // makes a set of random grain frames of a given size and strength
+  function makeNoiseFrames(w, h, strength) {
+    const frames = [];
+    for (let f = 0; f < GRAIN_FRAMES; f++) {
+      const off = document.createElement("canvas");
+      off.width = w;
+      off.height = h;
+      const ctx = off.getContext("2d");
+      const img = ctx.createImageData(w, h);
+      const px = new Uint32Array(img.data.buffer);
+      for (let i = 0; i < px.length; i++) {
+        const v = (255 - Math.random() * strength) | 0;
+        px[i] = (255 << 24) | (v << 16) | (v << 8) | v; // grey, fully opaque
+      }
+      ctx.putImageData(img, 0, 0);
+      frames.push(off);
+    }
+    return frames;
+  }
+
+  // screen grain (whole window)
+  const grainCanvas = document.getElementById("grain");
+  const grainCtx = grainCanvas.getContext("2d");
+  let grainFrames = [];
+  let grainIndex = 0;
+
+  function makeGrainFrames() {
+    grainCanvas.width = window.innerWidth;
+    grainCanvas.height = window.innerHeight;
+    grainFrames = makeNoiseFrames(grainCanvas.width, grainCanvas.height, GRAIN_STRENGTH);
+    grainCtx.drawImage(grainFrames[0], 0, 0);
+  }
+
+  // optional extra grain over the corner photo
+  const photoGrainCanvas = document.getElementById("photoGrain");
+  const photoGrainCtx = photoGrainCanvas.getContext("2d");
+  let photoGrainFrames = [];
+
+  function makePhotoGrainFrames() {
+    if (PHOTO_GRAIN_STRENGTH <= 0) { photoGrainCanvas.style.display = "none"; return; }
+    const box = document.getElementById("photoImgs");
+    const w = Math.round(box.clientWidth);
+    const h = Math.round(box.clientHeight);
+    if (w < 2 || h < 2) return;         // photo not loaded yet; tried again once it is
+    photoGrainCanvas.width = w;
+    photoGrainCanvas.height = h;
+    photoGrainFrames = makeNoiseFrames(w, h, PHOTO_GRAIN_STRENGTH);
+    photoGrainCtx.drawImage(photoGrainFrames[0], 0, 0);
+  }
+  makePhotoGrainFrames();
+
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  makeGrainFrames();
+  if (!reduceMotion && GRAIN_FRAMES > 1) {
+    setInterval(() => {
+      grainIndex = (grainIndex + 1) % GRAIN_FRAMES;
+      if (grainFrames.length) grainCtx.drawImage(grainFrames[grainIndex], 0, 0);
+      if (photoGrainFrames.length) photoGrainCtx.drawImage(photoGrainFrames[grainIndex], 0, 0);
+    }, 1000 / GRAIN_FPS);
+  }
+
+  /*
+    CIRCLE SIZE
+    D    = the size of the small circles (the ones not in the middle), in vw
+    GROW = how much the middle circle grows compared to the small ones (12 x 1.75 = 21)
+  */
+  const D = 12;
+  const GROW = 1.75;
+
+  /*
+    BLUR AND FADE (the small circles, not in the middle)
+    BLUR          = how soft the small circles are, in px (0 = no blur, 2 = subtle, 3 = soft, 5 = very dreamy)
+    SMALL_OPACITY = how strong the small circles are (1 = no fade, 0.85 = gentle fade, 0.7 = clearly recede)
+  */
+  const BLUR = 3;
+  const SMALL_OPACITY = 0.85;
+
+  /*
+    EDIT HERE
+    The first entry is circle 01, the second is circle 02, and so on.
+    src      = the EDITED cover shown inside the circle, e.g. "images/1.png". Leave "" for a grey circle.
+    alt      = short description of that image
+    crop     = (optional) set the crop by hand: { x, y, size }
+               x: smaller = the cover moves RIGHT, bigger = LEFT; y: smaller = DOWN, bigger = UP;
+               size: smaller = zooms in, bigger = zooms out
+    zoom     = (optional) zooms in on the cover after cropping
+               (1 = no zoom, 1.1 = a little, 1.2 = 20% closer, 1.35 = close; below 1 zooms OUT)
+    shift    = (optional) slides the cover inside its circle, after zooming
+               x: positive = LEFT, negative = RIGHT;  y: positive = UP, negative = DOWN
+               (0.03 = a nudge, 0.05 = a little, 0.1 = a lot; the more zoomed in, the further each step moves it)
+    photo    = the ORIGINAL colour photo of the whole FDC, shown in the top-left corner
+    photoAlt = short description of that photo
+    city     = the city where the photo was taken (stored, not shown at the moment)
+    date     = when the photo was taken, written like "Aug 28 2026" (shown in the label row, see DATE_STYLE)
+    time     = what time it was taken, e.g. "15:10:09" (only shown if SHOW_TIME is true)
+    coords   = where it was taken, e.g. "40.7265° N, 73.9944° W"
+               (to find exact coordinates: right-click the spot in Google Maps; the first line shows them)
+    map      = (optional) a different link for the coordinates to open instead, e.g. a Street View link
+  */
+  const items = [
+    { // 01
+      src: "images/1.png",           alt: "Edited scan of a worn FDC cover",
+      zoom: 1.3,
+      photo: "images/fdc_01.png",    photoAlt: "Photo of a Fire Department Connection plate",
+      city: "New York City",
+      date: "Aug 28 2026",
+      time: "15:10:09",
+      coords: "40.7265° N, 73.9944° W"   // 1 Bond St, New York (approximate: check in Google Maps)
+    },
+    { // 02
+      src: "images/2.png",           alt: "Edited scan of a yellow Wilson and Cousins FDC cover",
+      crop: { x: 0.46, y: 0.539, size: 0.67 },   // just the round cover, without the tab and screw on the right
+      zoom: 1.08,
+      photo: "images/fdc_02.png",    photoAlt: "Photo of an Auto Sprinkler FDC plate with two yellow covers",
+      city: "New York City",
+      date: "Aug 28 2026",
+      time: "18:12:12",
+      coords: "40.7520° N, 73.9920° W"   // W 35th St, New York (placeholder: replace with the exact spot from Google Maps)
+    },
+    { // 03
+      src: "images/3.png",           alt: "Edited scan of an FDC cover",
+      zoom: 1.3,  shift: { x: 0.05, y: 0 },
+      photo: "images/fdc_03.png",    photoAlt: "Photo of a Fire Department Connection plate at 770 Broadway",
+      city: "New York City",
+      date: "Aug 28 2026",
+      time: "14:57",
+      coords: "40.7313° N, 73.9925° W"   // 770 Broadway, New York, NY 10003 (corner of Broadway and E 9th St)
+    },
+    { // 04
+      src: "images/4.png",           alt: "Edited scan of an FDC cover",
+      zoom: 3,    shift: { x: 0.01, y: 0.01 },
+      photo: "images/fdc_04.png",    photoAlt: "Photo of a Fire Department Connection plate on East 4th Street",
+      city: "New York City", date: "Aug 29 2026", time: "",
+      coords: "40.7280° N, 73.9930° W"   // 5 E 4th St, New York (approximate: check in Google Maps)
+    },
+    { // 05
+      src: "images/5.png",           alt: "Edited scan of an FDC cover",
+      zoom: 1.4,  shift: { x: 0.04, y: 0.02 },
+      photo: "images/fdc_05.png",    photoAlt: "Photo of a Fire Department Connection plate on Bond Street",
+      city: "New York City", date: "Aug 30 2026", time: "",
+      coords: "40.7262° N, 73.9929° W"   // 25 Bond St, New York (approximate: check in Google Maps)
+    },
+    { // 06
+      src: "images/6.png",           alt: "Edited scan of an FDC cover",
+      zoom: 1.4,  shift: { x: 0.04, y: 0.03 },
+      photo: "images/fdc_06.png",    photoAlt: "Photo of a Fire Department Connection plate on Broadway",
+      city: "New York City", date: "Aug 31 2026", time: "",
+      coords: "40.7297° N, 73.9934° W"   // 729–735 Broadway, New York (approximate: check in Google Maps)
+    },
+    { // 07
+      src: "images/7.png",           alt: "Edited scan of an FDC cover",
+      zoom: 2.2,  shift: { x: 0.06, y: 0 },
+      photo: "images/fdc_07.png",    photoAlt: "Photo of a Fire Department Connection plate on Lafayette Street",
+      city: "New York City", date: "Sep 1 2026", time: "",
+      coords: "40.7280° N, 73.9923° W"   // given as 499 Lafayette St, which doesn't exist: this is 399 Lafayette St (a guess, check)
+    },
+    { // 08
+      src: "images/8.png",           alt: "Edited scan of an FDC cover",
+      zoom: 1.9,  shift: { x: -0.03, y: 0.02 },
+      photo: "images/fdc_08.png",    photoAlt: "Photo of a Fire Department Connection plate on Broadway",
+      city: "New York City", date: "Sep 2 2026", time: "",
+      coords: "40.7309° N, 73.9924° W"   // 768 Broadway, New York (approximate: check in Google Maps)
+    },
+    { // 09
+      src: "images/9.png",           alt: "Edited scan of an FDC cover",
+      zoom: 1.8,  shift: { x: 0, y: 0 },
+      photo: "images/fdc_09.png",    photoAlt: "Photo of a Fire Department Connection plate on East 9th Street",
+      city: "New York City", date: "Sep 3 2026", time: "",
+      coords: "40.7312° N, 73.9908° W"   // 87–99 E 9th St, New York (approximate: check in Google Maps)
+    }
+  ];
+
+  /*
+    SCROLL SETTINGS
+    GAP          = space between circles, in vw
+    STEP         = how much scrolling it takes to move from one circle to the next
+    SETTLE       = how much each circle pauses when it's big in the middle (0 to 1)
+    EASE         = how quickly the circles catch up (0.06 = slow and floaty, 0.1 = smooth, 0.2 = quick)
+    WHEEL_SPEED  = scroll sensitivity for mouse and trackpad
+    TOUCH_SPEED  = scroll sensitivity for touch screens
+    SNAP_DELAY   = how long after you stop scrolling before it settles on the nearest circle (ms)
+  */
+  const GAP = 0.95;
+  const STEP = 450;
+  const SETTLE = 0.6;
+  const EASE = 0.09;
+  const WHEEL_SPEED = 1;
+  const TOUCH_SPEED = 1.6;
+  const SNAP_DELAY = 160;
+
+  /* COPIES = how many copies of each circle exist (for tall, narrow windows). 3 is plenty. */
+  const COPIES = 3;
+
+  const stage = document.getElementById("stage");
+  const bignumEl = document.getElementById("bignum");
+  const titleEl = document.getElementById("title");
+  const titleTextEl = document.getElementById("titleText");
+  const titleBaselineEl = document.getElementById("titleBaseline");
+  const photoEl = document.getElementById("photo");
+  const photoImgsEl = document.getElementById("photoImgs");
+  const photoInfoEl = document.getElementById("photoInfo");
+  const copies = [];    // copies[i] = the copies of circle i, each { fig, media, hasImage, used }
+  const bigNums = [];   // the big numbers (one per circle)
+  const photos = [];    // the corner photo for each circle: { pic, bw, info } (or null)
+  const digitEls = [];  // [left digit, right digit] for each number
+  const labels = [];    // "01", "02", ...
+  const N = items.length;
+  const mod = (a, n) => ((a % n) + n) % n;
+
+  // hide the title when SHOW_TITLE is false
+  titleEl.classList.toggle("is-hidden", !SHOW_TITLE);
+
+  // hide the big number when SHOW_NUMBER is false
+  bignumEl.classList.toggle("is-hidden", !SHOW_NUMBER);
+  // solid or striped number (see NUMBER_STYLE)
+  bignumEl.classList.toggle("is-lines", NUMBER_STYLE === "lines");
+
+  // "15:10:09" -> "03:10:09 PM" (anything already containing AM or PM is left as written)
+  function formatTime(t) {
+    if (!t) return "";
+    if (/am|pm/i.test(t)) return t;
+    const parts = t.split(":").map(Number);
+    if (parts.some(isNaN)) return t;
+    const [h, m = 0, s] = parts;
+    const pad = n => String(n).padStart(2, "0");
+    const h12 = h % 12 === 0 ? 12 : h % 12;
+    const ampm = h < 12 ? "AM" : "PM";
+    return pad(h12) + ":" + pad(m) + (s !== undefined ? ":" + pad(s) : "") + " " + ampm;
+  }
+
+  // "Aug 28 2026" -> "28.08.2026" (anything it can't read is left as written)
+  function formatDate(d) {
+    if (!d) return "";
+    const months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+    const m = d.trim().match(/^([a-z]+)\.?\s+(\d{1,2}),?\s+(\d{4})$/i);
+    if (!m) return d;
+    const month = months.indexOf(m[1].slice(0, 3).toLowerCase()) + 1;
+    if (month === 0) return d;
+    const pad = n => String(n).padStart(2, "0");
+    return pad(m[2]) + "." + pad(month) + "." + m[3];
+  }
+
+  // the field date for the label row, in the style chosen by DATE_STYLE
+  function counterDate(d) {
+    if (DATE_STYLE === "written") return d;
+    const full = formatDate(d);                  // "28.08.2026" (or as written, if it can't be read)
+    if (DATE_STYLE === "short" && /^\d{2}\.\d{2}\.\d{4}$/.test(full)) return full.slice(0, 6) + full.slice(8);
+    return full;
+  }
+
+  // "40.7265° N, 73.9944° W" -> a Google Maps link to that exact spot
+  function mapsUrl(coords) {
+    const m = coords.match(/(-?\d+(?:\.\d+)?)\s*°?\s*([NS])?\s*[,\s]\s*(-?\d+(?:\.\d+)?)\s*°?\s*([EW])?/i);
+    if (!m) return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(coords);
+    let lat = parseFloat(m[1]);
+    let lng = parseFloat(m[3]);
+    if (m[2] && m[2].toUpperCase() === "S") lat = -Math.abs(lat);
+    if (m[4] && m[4].toUpperCase() === "W") lng = -Math.abs(lng);
+    return "https://www.google.com/maps/search/?api=1&query=" + lat + "," + lng;
+  }
+
+  items.forEach((it, i) => {
+    copies[i] = [];
+    for (let r = 0; r < COPIES; r++) {
+      const fig = document.createElement("figure");
+      fig.className = "item";
+      fig.style.mixBlendMode = it.src ? IMAGE_BLEND : EMPTY_BLEND;
+      if (r === 0) {
+        fig.tabIndex = 0;
+        fig.setAttribute("role", "button");
+        fig.setAttribute("aria-label", "Number " + (i + 1));
+      } else {
+        fig.setAttribute("aria-hidden", "true"); // repeats are only visual
+      }
+
+      let m;
+      if (it.src) {
+        m = document.createElement("img");
+        m.src = it.src;
+        m.alt = r === 0 ? it.alt : "";
+        m.style.filter = "grayscale(1) contrast(var(--img-contrast)) brightness(var(--img-brightness))";
+        if (LINE_SCREEN) m.style.opacity = "0";   // hidden until the striped version is ready (no flash of the plain scan)
+      } else {
+        m = document.createElement("div");
+        m.className = "ph";
+      }
+      fig.appendChild(m);
+
+      fig.addEventListener("click", () => goTo(i));
+      if (r === 0) {
+        fig.addEventListener("keydown", e => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            goTo(i);
+          }
+        });
+      }
+
+      stage.appendChild(fig);
+      copies[i].push({ fig, media: m, hasImage: !!it.src, used: false });
+    }
+
+    const label = String(i + 1).padStart(2, "0");   // "01", "02", ...
+
+    // corner photo (black and white + colour on top) and its specimen label
+    if (it.photo) {
+      const pic = document.createElement("div");
+      pic.className = "pic";
+
+      // black-and-white version (shown normally)
+      const bw = document.createElement("img");
+      bw.className = "bw";
+      bw.alt = it.photoAlt || "";
+      // once the photo is in: size the (optional) photo grain, and place the title
+      bw.addEventListener("load", () => { makePhotoGrainFrames(); fitTitle(); });
+      if (!PHOTO_LINE_SCREEN) {
+        bw.src = it.photo;
+        bw.classList.add("is-grey");        // plain, softened black and white
+      }
+
+      // original colour version (on top, shown while hovering)
+      const colour = document.createElement("img");
+      colour.className = "colour";
+      colour.src = it.photo;
+      colour.alt = "";
+
+      pic.appendChild(bw);
+      pic.appendChild(colour);
+      photoImgsEl.insertBefore(pic, photoGrainCanvas);    // photos go under the (optional) photo grain
+
+      const info = document.createElement("div");
+      info.className = "info";
+
+      // specimen label row: "Fig. 08" on the left, the field date (or "of 09") on the right, across the photo's width
+      if (SHOW_COUNTER) {
+        const counter = document.createElement("div");
+        counter.className = "counter";
+        const left = document.createElement("span");
+        const right = document.createElement("span");
+        left.textContent = COUNTER_LEFT + label;
+        right.textContent = COUNTER_RIGHT_SHOWS === "date"
+          ? (it.date ? counterDate(it.date) : DATE_MISSING)
+          : COUNTER_RIGHT + String(N).padStart(2, "0");
+        counter.append(left, right);
+        info.appendChild(counter);
+      }
+
+      // (#Fig. 01, if SHOW_FIG is true / time, if SHOW_TIME is true)
+      [
+        SHOW_FIG ? FIG_PREFIX + label : "",
+        SHOW_TIME ? formatTime(it.time) : ""
+      ].forEach(text => {
+        if (!text) return;
+        const line = document.createElement("span");
+        line.textContent = text;
+        info.appendChild(line);
+      });
+
+      // the coordinates, as a link to Google Maps (opens in a new tab; blinks while hovered)
+      if (it.coords) {
+        const line = document.createElement("span");
+        line.className = "coords";
+        const link = document.createElement("a");
+        link.href = it.map || mapsUrl(it.coords);
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = it.coords;
+        link.setAttribute("aria-label", "Open " + it.coords + " in Google Maps");
+        link.tabIndex = -1;                 // only the visible link can be reached (see showCorner)
+        line.appendChild(link);
+        info.appendChild(line);
+      }
+
+      photoInfoEl.appendChild(info);
+      photos.push({ pic, bw, info });
+    } else {
+      photos.push(null);
+    }
+
+    // big number for this circle, as two digits that each sit in their own fixed slot
+    const b = document.createElement("div");
+    b.className = "num";
+    const d1 = document.createElement("span");
+    const d2 = document.createElement("span");
+    d1.className = "digit";
+    d2.className = "digit";
+    d1.textContent = label[0];
+    d2.textContent = label[1];
+    b.appendChild(d1);
+    b.appendChild(d2);
+    bignumEl.appendChild(b);
+    bigNums.push(b);
+    digitEls.push([d1, d2]);
+    labels.push(label);
+  });
+
+  // ---------- HOVER: show the corner photo in colour (and the text in black) exactly while the mouse is over it ----------
+  let mouseX = -1, mouseY = -1;
+
+  const isInside = (r, x, y) => x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+
+  function updatePhotoHover() {
+    const now = photos[cornerIndex];
+    let over = false;
+    if (now && mouseX >= 0) {
+      over = isInside(now.pic.getBoundingClientRect(), mouseX, mouseY) ||
+             isInside(now.info.getBoundingClientRect(), mouseX, mouseY);
+    }
+    photoEl.classList.toggle("is-hover", over);
+  }
+
+  function trackMouse(e) {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+    updatePhotoHover();
+  }
+  ["pointermove", "mousemove", "pointerover"].forEach(type =>
+    document.addEventListener(type, trackMouse, { capture: true, passive: true })
+  );
+
+  // mouse leaves the window or the window loses focus: back to black and white / grey text
+  document.documentElement.addEventListener("mouseleave", () => { mouseX = mouseY = -1; updatePhotoHover(); });
+  window.addEventListener("blur", () => { mouseX = mouseY = -1; updatePhotoHover(); });
+
+  // safety check 10 times a second (e.g. while scrolling with the mouse resting on the photo)
+  setInterval(updatePhotoHover, 100);
+
+  // ---------- TITLE (hidden for now: SHOW_TITLE) ----------
+  let photoBlockTop = null;      // remembered top of the photo (px)
+  let photoBlockHeight = null;   // remembered height of the photo (px)
+
+  function fitTitle() {
+    const box = photoImgsEl.getBoundingClientRect();
+    if (box.height > 1) {
+      photoBlockTop = box.top;
+      photoBlockHeight = box.height;
+    }
+    const top = photoBlockTop ?? box.top;
+    const height = photoBlockHeight ?? box.width * 0.7;
+
+    const cs = getComputedStyle(titleTextEl);
+    const size = parseFloat(cs.fontSize);
+    measureCtx.font = cs.fontWeight + " " + cs.fontSize + " " + cs.fontFamily;
+    const m = measureCtx.measureText(titleTextEl.textContent);
+    const inkAbove = m.actualBoundingBoxAscent;
+    const inkBelow = m.actualBoundingBoxDescent;
+    const inkLeft = m.actualBoundingBoxLeft;
+    const inkRight = m.actualBoundingBoxRight;
+
+    const textRect = titleTextEl.getBoundingClientRect();
+    const baseline = titleBaselineEl.getBoundingClientRect().top - textRect.top;
+
+    const boxH = height;
+    const gap = Math.max(0, (boxH - (inkAbove + inkBelow)) / 2);
+    const padX = gap;
+    const boxW = inkLeft + inkRight + padX * 2 - TITLE_TRIM_RIGHT * size;
+    titleEl.style.width = boxW + "px";
+    titleEl.style.height = boxH + "px";
+
+    titleTextEl.style.left = (padX + inkLeft) + "px";
+    titleTextEl.style.top = (gap + inkAbove - baseline) + "px";
+
+    titleEl.style.top = top + "px";
+    titleEl.style.right = "calc(var(--bar-right) + var(--title-nudge-left))";
+  }
+
+  // ---------- IMAGE TREATMENT: crop to the cover, zoom and shift (if asked), then the line screen ----------
+
+  const OUT_MAX = 1200; // largest size (px) of the treated image
+
+  // the whole image on a white canvas (used when there's no crop)
+  function drawWhole(im) {
+    const k = Math.min(1, OUT_MAX / Math.max(im.naturalWidth, im.naturalHeight));
+    const c = document.createElement("canvas");
+    c.width = Math.round(im.naturalWidth * k);
+    c.height = Math.round(im.naturalHeight * k);
+    const ctx = c.getContext("2d");
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, c.width, c.height);
+    ctx.drawImage(im, 0, 0, c.width, c.height);
+    return c;
+  }
+
+  // cuts a square out of the full-size image
+  function cutSquare(im, sx, sy, sSide) {
+    const S = Math.min(OUT_MAX, Math.round(sSide));
+    const out = document.createElement("canvas");
+    out.width = S;
+    out.height = S;
+    const o = out.getContext("2d");
+    o.fillStyle = "#fff";
+    o.fillRect(0, 0, S, S);
+    o.drawImage(im, sx, sy, sSide, sSide, 0, 0, S, S);
+    return out;
+  }
+
+  // zooms in on a cropped cover and slides it (used by a circle's zoom: and shift: lines)
+  function zoomIn(c, z, shift = {}) {
+    const w = c.width, h = c.height;
+    const out = document.createElement("canvas");
+    out.width = w;
+    out.height = h;
+    const o = out.getContext("2d");
+    o.fillStyle = "#fff";
+    o.fillRect(0, 0, w, h);
+    const sw = w / z, sh = h / z;
+    o.drawImage(c, (w - sw) / 2 + (shift.x || 0) * w, (h - sh) / 2 + (shift.y || 0) * h, sw, sh, 0, 0, w, h);
+    return out;
+  }
+
+  // the hand-set crop from a circle's crop: { x, y, size } line
+  function cropByHand(im, crop) {
+    const W = im.naturalWidth;
+    const H = im.naturalHeight;
+    const sSide = crop.size * W;
+    return cutSquare(im, crop.x * W - sSide / 2, crop.y * H - sSide / 2, sSide);
+  }
+
+  // finds the cover and returns a square canvas cropped tightly around it
+  function cropToCover(im) {
+    const MAX = 900;
+    const k = Math.min(1, MAX / Math.max(im.naturalWidth, im.naturalHeight));
+    const w = Math.round(im.naturalWidth * k);
+    const h = Math.round(im.naturalHeight * k);
+    const c = document.createElement("canvas");
+    c.width = w;
+    c.height = h;
+    const ctx = c.getContext("2d", { willReadFrequently: true });
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(im, 0, 0, w, h);
+    const d = ctx.getImageData(0, 0, w, h).data;
+
+    const rows = new Uint32Array(h);
+    const cols = new Uint32Array(w);
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const p = (y * w + x) * 4;
+        const lum = d[p] * 0.299 + d[p + 1] * 0.587 + d[p + 2] * 0.114;
+        if (lum < CROP_THRESHOLD) { rows[y]++; cols[x]++; }
+      }
+    }
+
+    const rowMin = Math.max(2, w * 0.01);
+    const colMin = Math.max(2, h * 0.01);
+    let top = 0, bottom = h - 1, left = 0, right = w - 1;
+    while (top < h && rows[top] < rowMin) top++;
+    while (bottom > top && rows[bottom] < rowMin) bottom--;
+    while (left < w && cols[left] < colMin) left++;
+    while (right > left && cols[right] < colMin) right--;
+    if (top >= bottom || left >= right) throw new Error("no cover found");
+
+    const cx = (left + right) / 2;
+    const cy = (top + bottom) / 2;
+    const side = Math.max(right - left, bottom - top) * (1 + CROP_PADDING);
+
+    return cutSquare(im, (cx - side / 2) / k, (cy - side / 2) / k, side / k);
+  }
+
+  // redraws the image as vertical lines: dark areas become stripes;
+  // light areas become see-through (PAPER_SHOWS_THROUGH) or white
+  function lineScreen(c, linesAcross) {
+    const w = c.width;
+    const h = c.height;
+    const ctx = c.getContext("2d", { willReadFrequently: true });
+    const img = ctx.getImageData(0, 0, w, h);
+    const d = img.data;
+
+    const period = w / linesAcross;
+    const hex = LINE_COLOR.replace("#", "");
+    const lr = parseInt(hex.slice(0, 2), 16);
+    const lg = parseInt(hex.slice(2, 4), 16);
+    const lb = parseInt(hex.slice(4, 6), 16);
+
+    for (let x = 0; x < w; x++) {
+      const phase = (x % period) / period;
+      for (let y = 0; y < h; y++) {
+        const p = (y * w + x) * 4;
+        const lum = d[p] * 0.299 + d[p + 1] * 0.587 + d[p + 2] * 0.114;
+
+        let ink;
+        if (LINE_STYLE === "halftone") {
+          ink = phase < (1 - lum / 255) * LINE_FILL * 2;
+        } else {
+          ink = lum < LINE_THRESHOLD && phase < LINE_FILL;
+        }
+
+        if (ink) {
+          d[p] = lr; d[p + 1] = lg; d[p + 2] = lb;
+          d[p + 3] = 255;
+        } else {
+          d[p] = 255; d[p + 1] = 255; d[p + 2] = 255;
+          d[p + 3] = PAPER_SHOWS_THROUGH ? 0 : 255;   // see-through: the page (and its grain) shows between the lines
+        }
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+  }
+
+  // loads an image file and calls build(image) to make the treated canvas; returns it as an image URL
+  function treat(src, build) {
+    return new Promise((resolve, reject) => {
+      const im = new Image();
+      im.onload = () => {
+        try {
+          resolve(build(im).toDataURL("image/png"));
+        } catch (err) {
+          reject(err);
+        }
+      };
+      im.onerror = reject;
+      im.src = src;
+    });
+  }
+
+  // circle covers: crop, zoom and shift, then the line screen; each circle fades in once its striped version is ready
+  items.forEach((it, i) => {
+    if (!it.src) return;
+    if (!it.crop && !it.zoom && !it.shift && !AUTO_CROP && !LINE_SCREEN) return;
+    treat(it.src, im => {
+      let c;
+      if (it.crop) {
+        c = cropByHand(im, it.crop);
+      } else if (AUTO_CROP) {
+        try { c = cropToCover(im); } catch (e) { c = drawWhole(im); }
+      } else {
+        c = drawWhole(im);
+      }
+      if (it.zoom || it.shift) c = zoomIn(c, it.zoom || 1, it.shift);
+      if (LINE_SCREEN) lineScreen(c, LINES_ACROSS);
+      return c;
+    })
+      .then(url => copies[i].forEach(cp => {
+        cp.media.onload = () => { cp.media.style.opacity = ""; };   // fades in once the striped version has loaded
+        cp.media.src = url;
+      }))
+      .catch(() => copies[i].forEach(cp => { cp.media.style.opacity = ""; }));   // if anything goes wrong, the original shows
+  });
+
+  // corner photos (only if PHOTO_LINE_SCREEN is true): the black-and-white version gets the lines
+  if (PHOTO_LINE_SCREEN) {
+    items.forEach((it, i) => {
+      if (!it.photo || !photos[i]) return;
+      treat(it.photo, im => {
+        const c = drawWhole(im);
+                lineScreen(c, PHOTO_LINES_ACROSS, PHOTO_LINE_STYLE);
+        return c;
+      })
+        .then(url => { photos[i].bw.src = url; })
+        .catch(() => {
+          photos[i].bw.src = it.photo;
+          photos[i].bw.classList.add("is-grey");
+        });
+    });
+  }
+
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const smoothstep = t => t * t * (3 - 2 * t);
+
+  // Builds the two fixed slots and places every digit in them; returns how much room the number needs
+  function fitBigNumbers(circleSize) {
+    const REF = 200; // measure at 200px, then scale
+    const family = getComputedStyle(digitEls[0][0]).fontFamily;
+    measureCtx.font = REF + "px " + family;
+
+    const used = [...new Set(labels.join(""))];
+    const dm = {};
+    used.forEach(ch => { dm[ch] = measureCtx.measureText(ch); });
+
+    const inkW = ch => dm[ch].actualBoundingBoxLeft + dm[ch].actualBoundingBoxRight;
+    const slotRef = Math.max(...used.map(inkW));
+    const maxAsc = Math.max(...used.map(ch => dm[ch].actualBoundingBoxAscent));
+    const maxDesc = Math.max(...used.map(ch => dm[ch].actualBoundingBoxDescent));
+    const fAsc = dm[used[0]].fontBoundingBoxAscent ?? REF * 0.8;
+    const fDesc = dm[used[0]].fontBoundingBoxDescent ?? REF * 0.2;
+
+    const totalRef = 2 * slotRef + DIGIT_GAP * REF;
+    const size = (circleSize * NUM_SPAN / totalRef) * REF;
+    root.style.setProperty("--big-num-size", size + "px");
+    const s = size / REF;
+
+    const slotW = slotRef * s;
+    const gap = DIGIT_GAP * size;
+    const shift = RIGHT_DIGIT_SHIFT * size;
+    const centres = [-(slotW + gap) / 2, (slotW + gap) / 2 + shift];
+
+    const baselineInBox = (size - (fAsc + fDesc) * s) / 2 + fAsc * s;
+    const baselineY = (maxAsc - maxDesc) / 2 * s;
+    const top = baselineY - baselineInBox;
+
+    const period = circleSize / LINES_ACROSS;
+    root.style.setProperty("--line-period", period + "px");
+    root.style.setProperty("--line-ink", (period * LINE_FILL) + "px");
+    const circleLeft = window.innerWidth / 2 - circleSize / 2;
+
+    labels.forEach((label, i) => {
+      [0, 1].forEach(j => {
+        const m = dm[label[j]];
+        const inkCentre = (m.actualBoundingBoxRight - m.actualBoundingBoxLeft) / 2 * s;
+        const el = digitEls[i][j];
+        const leftFromCentre = centres[j] - inkCentre;
+        el.style.left = "calc(50% + " + leftFromCentre + "px)";
+        el.style.top = "calc(50% + " + top + "px + var(--big-num-offset))";
+
+        const digitLeft = window.innerWidth / 2 + leftFromCentre;
+        const offset = mod(circleLeft - digitLeft + NUMBER_LINE_SHIFT * period, period);
+        el.style.backgroundPosition = offset + "px 0";
+      });
+    });
+
+    const rightEdge = centres[1] + slotW / 2;
+    const leftEdge = -centres[0] + slotW / 2;
+    return 2 * Math.max(rightEdge, leftEdge);
+  }
+
+  // Sizes the coordinates so their letters run exactly as wide as the photo (see MATCH_PHOTO_WIDTH),
+  // and gives the whole label (the Fig. row too) that same size
+  function fitCoordsWidth() {
+    if (!MATCH_PHOTO_WIDTH) return;
+    const target = photoImgsEl.getBoundingClientRect().width;
+    if (target < 2) return;
+    photoInfoEl.querySelectorAll(".info").forEach(info => {
+      const line = info.querySelector(".coords");
+      if (!line) return;
+      info.style.fontSize = "";
+      line.style.marginLeft = "";
+      const cs = getComputedStyle(line);
+      const base = parseFloat(cs.fontSize);
+      measureCtx.font = cs.fontWeight + " " + cs.fontSize + " " + cs.fontFamily;
+      const m = measureCtx.measureText(line.textContent);
+      const ink = m.actualBoundingBoxLeft + m.actualBoundingBoxRight;
+      if (ink <= 0) return;
+      const scale = target / ink;
+      info.style.fontSize = (base * scale) + "px";                         // the whole label gets this size
+      line.style.marginLeft = (m.actualBoundingBoxLeft * scale) + "px";   // first character starts exactly at the photo's edge
+    });
+  }
+
+  // Measures the invisible space above the letters in the real font and lifts the corner text by exactly that much,
+  // so the gap below the photo (--photo-gap) is measured to the actual top of the letters
+  function fitCornerText() {
+    const first = photoInfoEl.querySelector(".info span");
+    const cs = getComputedStyle(first || photoInfoEl);
+    const size = parseFloat(cs.fontSize);
+    measureCtx.font = cs.fontWeight + " " + cs.fontSize + " " + cs.fontFamily;
+    const m = measureCtx.measureText(first ? first.textContent : "F");
+    const asc = m.fontBoundingBoxAscent ?? size * 0.8;
+    const desc = m.fontBoundingBoxDescent ?? size * 0.2;
+    const halfLeading = (size - (asc + desc)) / 2;            // with line-height: 1
+    const spaceAbove = halfLeading + asc - m.actualBoundingBoxAscent;
+    root.style.setProperty("--photo-text-nudge", (-spaceAbove) + "px");
+  }
+
+  // sizes in pixels, worked out again whenever the window changes size
+  let small, big, gapPx, mid, colPx = 0;
+
+  function measure() {
+    const vw = window.innerWidth / 100;
+
+    small = D * vw;
+    big = D * GROW * vw;   // every circle grows to the same size
+    gapPx = GAP * vw;
+    mid = window.innerHeight / 2;
+
+    // place the big number's slots, then make room for it
+    const numberW = fitBigNumbers(big);
+    colPx = Math.max(small, big, numberW) + 2 * vw;
+    root.style.setProperty("--col", colPx + "px");
+
+    // the window size changed: the photo may have too, so measure it again
+    photoBlockTop = null;
+    photoBlockHeight = null;
+    fitTitle();
+    fitCoordsWidth();
+    fitCornerText();
+  }
+
+  // Sizes and places one circle; the small circles are blurred and faded, the middle one is sharp
+  function place(copy, d, y) {
+    const fig = copy.fig;
+    fig.style.width = d + "px";
+    fig.style.height = d + "px";
+    fig.style.transform = "translate3d(-50%, " + y + "px, 0)";
+
+    const grownAmount = big > small ? Math.min(Math.max((d - small) / (big - small), 0), 1) : 1;
+
+    const blur = BLUR * (1 - grownAmount);
+    fig.style.filter = blur > 0.05 ? "blur(" + blur.toFixed(2) + "px)" : "none";
+
+    fig.style.opacity = lerp(SMALL_OPACITY, 1, grownAmount).toFixed(3);
+  }
+
+  // ---------- THE CORNER: which photo (and label) is showing ----------
+  let cornerIndex = -1;
+  function showCorner(i) {
+    if (i === cornerIndex) return;
+    if (cornerIndex >= 0) {
+      const old = photos[cornerIndex];
+      if (old) {
+        old.pic.classList.remove("is-active");
+        old.info.classList.remove("is-active");
+        old.info.querySelectorAll("a").forEach(a => { a.tabIndex = -1; });
+      }
+    }
+    const now = photos[i];
+    if (now) {
+      now.pic.classList.add("is-active");
+      now.info.classList.add("is-active");
+      now.info.querySelectorAll("a").forEach(a => { a.tabIndex = 0; });   // the visible link can be reached with Tab
+    }
+    photoGrainCanvas.style.opacity = now ? "1" : "0";
+    cornerIndex = i;
+    updatePhotoHover();   // the photo changed under the mouse: check again
+  }
+
+  // ---------- THE CORNER SLIDESHOW: plays through the photos while you're not scrolling ----------
+  let slideshowOn = false;
+  let slideTimer = null;
+  let slideStartTimer = null;
+
+  function nextSlide() {
+    if (photoEl.classList.contains("is-hover")) return;   // paused while the mouse is over the corner
+    for (let s = 1; s <= N; s++) {
+      const k = mod(cornerIndex + s, N);
+      if (photos[k]) { showCorner(k); return; }
+    }
+  }
+
+  function scheduleSlideshow(delay = SLIDESHOW_DELAY) {
+    if (!SLIDESHOW || reduceMotion) return;
+    clearTimeout(slideStartTimer);
+    clearInterval(slideTimer);
+    slideStartTimer = setTimeout(() => {
+      slideshowOn = true;
+      slideTimer = setInterval(nextSlide, SLIDESHOW_SPEED);
+    }, delay);
+  }
+
+  function stopSlideshow() {
+    clearTimeout(slideStartTimer);
+    clearInterval(slideTimer);
+    slideshowOn = false;
+    if (activeIndex >= 0) showCorner(activeIndex);
+  }
+
+  // Shows the big number for the circle in the middle (and, unless the slideshow is playing, its corner photo)
+  let activeIndex = -1;
+  function setActive(i) {
+    if (i === activeIndex) return;
+    if (activeIndex >= 0) bigNums[activeIndex].classList.remove("is-active");
+    bigNums[i].classList.add("is-active");
+    activeIndex = i;
+    if (!slideshowOn) showCorner(i);
+  }
+
+  // Draws the loop for a position (0 = circle 01 in the middle, STEP = circle 02, and so on)
+  function render(pos) {
+    const f = pos / STEP;
+    const c = Math.floor(f);
+    const frac = f - c;
+    const g = lerp(frac, smoothstep(frac), SETTLE);
+    const H = window.innerHeight;
+
+    copies.forEach(list => list.forEach(cp => { cp.used = false; }));
+    const count = new Array(N).fill(0);
+    const show = (i, d, y) => {
+      const k = count[i]++;
+      if (k >= COPIES) return;
+      const cp = copies[i][k];
+      cp.used = true;
+      place(cp, d, y);
+    };
+
+    const from = mod(c, N);
+    const to = mod(c + 1, N);
+
+    const dFrom = lerp(big, small, g);
+    const dTo = lerp(small, big, g);
+
+    const topFrom = lerp(mid - big / 2, mid - (small + gapPx + big / 2), g);
+
+    show(from, dFrom, topFrom);
+    show(to, dTo, topFrom + dFrom + gapPx);
+
+    let y = topFrom;
+    let k = 1;
+    while (y > 0 && k <= N * COPIES) {
+      y -= gapPx + small;
+      show(mod(c - k, N), small, y);
+      k++;
+    }
+
+    y = topFrom + dFrom + gapPx + dTo + gapPx;
+    k = 1;
+    while (y < H && k <= N * COPIES) {
+      show(mod(c + 1 + k, N), small, y);
+      y += small + gapPx;
+      k++;
+    }
+
+    copies.forEach(list => list.forEach(cp => {
+      cp.fig.style.display = cp.used ? "" : "none";
+    }));
+
+    setActive(mod(Math.round(f), N));
+  }
+
+  // ---- Movement ----
+  let current = 0;
+  let target = 0;
+  let running = false;
+  let snapTimer = null;
+
+  function loop() {
+    current = reduceMotion ? target : lerp(current, target, EASE);
+    if (Math.abs(target - current) < 0.1) {
+      current = target;
+      render(current);
+      running = false;
+      hideNumberSoon();
+      scheduleSlideshow();
+      return;
+    }
+    render(current);
+    requestAnimationFrame(loop);
+  }
+
+  let numberHideTimer = null;
+  function showNumber() {
+    clearTimeout(numberHideTimer);
+    bignumEl.classList.add("is-scrolling");
+  }
+  function hideNumberSoon() {
+    clearTimeout(numberHideTimer);
+    numberHideTimer = setTimeout(() => bignumEl.classList.remove("is-scrolling"), NUMBER_HIDE_DELAY);
+  }
+
+  function start() {
+    showNumber();
+    stopSlideshow();
+    if (!running) {
+      running = true;
+      requestAnimationFrame(loop);
+    }
+  }
+
+  function snapSoon() {
+    clearTimeout(snapTimer);
+    snapTimer = setTimeout(() => {
+      target = Math.round(target / STEP) * STEP;
+      start();
+    }, SNAP_DELAY);
+  }
+
+  // Mouse wheel and trackpad (scrolling inside the About page scrolls the text, not the circles)
+  window.addEventListener("wheel", e => {
+    if (inBars(e.target)) return;
+    e.preventDefault();
+    let dy = e.deltaY;
+    if (e.deltaMode === 1) dy *= 16;
+    if (e.deltaMode === 2) dy *= window.innerHeight;
+    target += dy * WHEEL_SPEED;
+    start();
+    snapSoon();
+  }, { passive: false });
+
+  // Touch
+  let lastTouchY = null;
+  window.addEventListener("touchstart", e => {
+    if (inBars(e.target)) { lastTouchY = null; return; }
+    lastTouchY = e.touches[0].clientY;
+    clearTimeout(snapTimer);
+  }, { passive: true });
+  window.addEventListener("touchmove", e => {
+    if (lastTouchY === null) return;
+    e.preventDefault();
+    const y = e.touches[0].clientY;
+    target += (lastTouchY - y) * TOUCH_SPEED;
+    lastTouchY = y;
+    start();
+  }, { passive: false });
+  window.addEventListener("touchend", () => {
+    if (lastTouchY === null) return;
+    lastTouchY = null;
+    snapSoon();
+  });
+
+  // Keyboard: arrows and page up/down move one circle at a time
+  window.addEventListener("keydown", e => {
+    if (inBars(document.activeElement)) return;
+    const keysDown = ["ArrowDown", "PageDown"];
+    const keysUp = ["ArrowUp", "PageUp"];
+    if (keysDown.includes(e.key) || keysUp.includes(e.key)) {
+      e.preventDefault();
+      const dir = keysDown.includes(e.key) ? 1 : -1;
+      target = (Math.round(target / STEP) + dir) * STEP;
+      start();
+    }
+  });
+
+  // Click: glide to circle i, taking the shortest way around the loop
+  function goTo(i) {
+    const f = target / STEP;
+    const lap = Math.round((f - i) / N);
+    const dest = (i + lap * N) * STEP;
+    if (Math.abs(dest - target) < 1) {
+      // This circle is already big in the middle.
+      // Later, this is where the quote and name will open.
+      return;
+    }
+    clearTimeout(snapTimer);
+    target = dest;
+    start();
+  }
+
+  // Window resized: everything resizes in proportion
+  let resizeTimer = null;
+  window.addEventListener("resize", () => {
+    measure();
+    render(current);
+    fitTextBlocks();
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      makeGrainFrames();
+      makePhotoGrainFrames();
+    }, 200);
+  });
+
+  measure();
+  render(current);
+  fitTextBlocks();
+  scheduleSlideshow(SLIDESHOW_FIRST_DELAY);
+
+  // measure again once the fonts have loaded, so everything uses the real letter shapes
+  document.fonts.ready.then(() => { measure(); render(current); fitTextBlocks(); });
+</script>
+</body>
+</html>
